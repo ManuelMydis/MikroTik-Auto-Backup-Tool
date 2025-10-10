@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🛡️ MikroTik Backup Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-light">
+  <!-- Theme Toggle -->
+  <button id="theme-toggle" class="theme-toggle" title="Toggle Dark/Light Mode">
+    <i class="fas fa-moon"></i>
+  </button>
+
+  <!-- Professional Header -->
+  <header class="professional-header">
+    <div class="header-content">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <div class="brand-info">
+          <h1>MikroTik Backup Manager</h1>
+          <p>Enterprise Router Backup & Management System</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="add-router-btn" class="btn-primary">
+          <i class="fas fa-plus"></i>
+          Add Router
+        </button>
+        <button id="refresh-btn" class="btn-secondary">
+          <i class="fas fa-sync-alt"></i>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Grid -->
+  <div class="dashboard-grid">
+    <!-- Stats Section -->
+    <div class="stats-section">
+      <h2>System Overview</h2>
+      <div class="stats-grid">
+        <div class="stat-card professional-card">
+          <div class="stat-icon">
+            <i class="fas fa-network-wired"></i>
+          </div>
+          <div class="stat-info">
+            <div class="stat-number" id="total-routers">0</div>
+            <div class="stat-label">Total Routers</div>
+          </div>
+        </div>
+
+        <div class="stat-card professional-card online">
+          <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="stat-info">
+            <div class="stat-number" id="online-routers">0</div>
+            <div class="stat-label">Online Routers</div>
+          </div>
+        </div>
+
+        <div class="stat-card professional-card offline">
+          <div class="stat-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="stat-info">
+            <div class="stat-number" id="offline-routers">0</div>
+            <div class="stat-label">Offline Routers</div>
+          </div>
+        </div>
+
+        <div class="stat-card professional-card storage">
+          <div class="stat-icon">
+            <i class="fas fa-database"></i>
+          </div>
+          <div class="stat-info">
+            <div class="stat-number" id="total-size">0 MB</div>
+            <div class="stat-label">Storage Used</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- Router Management Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2><i class="fas fa-network-wired"></i> Router Management</h2>
+          <div class="section-actions">
+            <button id="add-router-section-btn" class="btn-primary section-btn">
+              <i class="fas fa-plus"></i>
+              Add Router
+            </button>
+          </div>
+        </div>
+
+        <div id="routers-container" class="routers-container">
+          <!-- Dynamically populated by JavaScript -->
+        </div>
+      </section>
+
+      <!-- Backup History Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2><i class="fas fa-history"></i> Recent Backups</h2>
+          <div class="section-actions">
+            <button class="btn-secondary section-btn" onclick="refreshAll()">
+              <i class="fas fa-sync-alt"></i>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div id="backups-container" class="backups-container">
+          <!-- Dynamically populated by JavaScript -->
+        </div>
+      </section>
+
+      <!-- Scheduler Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2><i class="fas fa-calendar-alt"></i> Scheduled Backups</h2>
+          <div class="section-actions">
+            <button id="create-schedule-btn" class="btn-primary section-btn">
+              <i class="fas fa-calendar-plus"></i>
+              Create Schedule
+            </button>
+          </div>
+        </div>
+        <div class="scheduler-info">
+          <p id="scheduler-status">Loading scheduler status...</p>
+        </div>
+        <div id="schedules-container" class="schedules-list">
+          <!-- Dynamically populated by JavaScript -->
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modals -->
+
+  <!-- Add Router Modal -->
+  <div id="add-router-modal" class="modal hidden">
+    <div class="modal-content modern-modal">
+      <div class="modal-header modern-header">
+        <div class="modal-title">
+          <div class="modal-icon">
+            <i class="fas fa-router"></i>
+          </div>
+          <div class="modal-title-text">
+            <h2>Add MikroTik Router</h2>
+            <p>Add a new router to your backup system</p>
+          </div>
+        </div>
+        <button class="modal-close modern-close">&times;</button>
+      </div>
+
+      <form id="add-router-form" class="modern-form">
+        <!-- Router Information Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3><i class="fas fa-info-circle"></i> Router Information</h3>
+          </div>
+
+          <div class="form-group modern-group">
+            <label for="router-name" class="modern-label">
+              <i class="fas fa-tag"></i>
+              Router Name *
+            </label>
+            <div class="input-wrapper">
+              <input type="text" id="router-name" placeholder="e.g., Office-Firewall, Branch-Router-01" required>
+              <small class="input-hint">Choose a descriptive name for easy identification</small>
+            </div>
+          </div>
+
+          <div class="form-group modern-group">
+            <label for="router-host" class="modern-label">
+              <i class="fas fa-network-wired"></i>
+              IP Address / Hostname *
+            </label>
+            <div class="input-wrapper">
+              <input type="text" id="router-host" placeholder="192.168.1.1 or router.example.com" required>
+              <small class="input-hint">Enter the router's IP address or hostname</small>
+            </div>
+          </div>
+
+          <div class="form-group modern-group">
+            <label for="router-notes" class="modern-label">
+              <i class="fas fa-sticky-note"></i>
+              Notes
+            </label>
+            <div class="input-wrapper">
+              <textarea id="router-notes" placeholder="Optional: Location, purpose, or any other notes about this router..." rows="3"></textarea>
+              <small class="input-hint">Add any additional information about this router</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connection Settings Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3><i class="fas fa-cog"></i> Connection Settings</h3>
+          </div>
+
+          <div class="form-row modern-row">
+            <div class="form-group modern-group">
+              <label for="router-username" class="modern-label">
+                <i class="fas fa-user"></i>
+                Username *
+              </label>
+              <div class="input-wrapper">
+                <input type="text" id="router-username" value="admin" placeholder="admin" required>
+                <small class="input-hint">Router login username</small>
+              </div>
+            </div>
+
+            <div class="form-group modern-group">
+              <label for="router-password" class="modern-label">
+                <i class="fas fa-lock"></i>
+                Password *
+              </label>
+              <div class="input-wrapper">
+                <div class="password-input">
+                  <input type="password" id="router-password" placeholder="Router password" required>
+                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility('router-password')">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+                <small class="input-hint">Router login password</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row modern-row">
+            <div class="form-group modern-group">
+              <label for="router-port" class="modern-label">
+                <i class="fas fa-plug"></i>
+                Port
+              </label>
+              <div class="input-wrapper">
+                <input type="number" id="router-port" value="8728" min="1" max="65535" placeholder="8728">
+                <small class="input-hint">API port (default: 8728)</small>
+              </div>
+            </div>
+
+            <div class="form-group modern-group">
+              <div class="input-wrapper">
+                <label class="checkbox-label modern-checkbox">
+                  <input type="checkbox" id="router-use-ssl">
+                  <span class="checkmark"></span>
+                  <span class="checkbox-text">
+                    <i class="fas fa-shield-alt"></i>
+                    Use SSL/TLS
+                  </span>
+                </label>
+                <small class="input-hint">Enable secure connection (recommended)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connection Test Section -->
+        <div class="form-section">
+          <div class="connection-test">
+            <button type="button" id="test-connection" class="btn-connection-test">
+              <i class="fas fa-plug"></i>
+              <span>Test Connection</span>
+            </button>
+            <div id="connection-status" class="connection-status"></div>
+          </div>
+        </div>
+
+        <div class="form-actions modern-actions">
+          <button type="button" class="btn-secondary modern-btn" onclick="closeAllModals()">
+            <i class="fas fa-times"></i>
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary modern-btn">
+            <i class="fas fa-save"></i>
+            Save Router
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create Schedule Modal -->
+  <div id="create-schedule-modal" class="modal hidden">
+    <div class="modal-content modern-modal">
+      <div class="modal-header modern-header">
+        <div class="modal-title">
+          <div class="modal-icon">
+            <i class="fas fa-calendar-plus"></i>
+          </div>
+          <div class="modal-title-text">
+            <h2>Create Backup Schedule</h2>
+            <p>Set up automated backups for your routers</p>
+          </div>
+        </div>
+        <button class="modal-close modern-close">&times;</button>
+      </div>
+
+      <form id="create-schedule-form" class="modern-form">
+        <!-- Schedule Configuration Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3><i class="fas fa-calendar-alt"></i> Schedule Configuration</h3>
+          </div>
+
+          <div class="form-group modern-group">
+            <label for="schedule-router" class="modern-label">
+              <i class="fas fa-router"></i>
+              Target Router *
+            </label>
+            <div class="input-wrapper">
+              <select id="schedule-router" required>
+                <option value="">Choose a router to backup...</option>
+              </select>
+              <small class="input-hint">Select the router you want to backup automatically</small>
+            </div>
+          </div>
+
+          <div class="form-group modern-group">
+            <label for="schedule-name" class="modern-label">
+              <i class="fas fa-tag"></i>
+              Schedule Name *
+            </label>
+            <div class="input-wrapper">
+              <input type="text" id="schedule-name" placeholder="e.g., Daily Office Backup, Weekly Full Backup" required>
+              <small class="input-hint">Give your schedule a descriptive name</small>
+            </div>
+          </div>
+
+          <div class="form-group modern-group">
+            <label for="schedule-frequency" class="modern-label">
+              <i class="fas fa-calendar-alt"></i>
+              Backup Frequency *
+            </label>
+            <div class="input-wrapper">
+              <select id="schedule-frequency" required onchange="updateCronFromFrequency()">
+                <option value="">Select backup frequency...</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="hourly">Every 6 Hours</option>
+                <option value="custom">Custom Schedule</option>
+              </select>
+              <small class="input-hint">Choose how often you want backups to run</small>
+            </div>
+          </div>
+
+          <!-- Time Selection (shown for daily/weekly/monthly) -->
+          <div id="time-selection" class="form-group modern-group" style="display: none;">
+            <label for="schedule-time" class="modern-label">
+              <i class="fas fa-clock"></i>
+              Backup Time
+            </label>
+            <div class="input-wrapper">
+              <input type="time" id="schedule-time" value="02:00">
+              <small class="input-hint">Select the time when backup should run</small>
+            </div>
+          </div>
+
+          <!-- Day Selection (shown for weekly) -->
+          <div id="day-selection" class="form-group modern-group" style="display: none;">
+            <label for="schedule-day" class="modern-label">
+              <i class="fas fa-calendar-day"></i>
+              Backup Day
+            </label>
+            <div class="input-wrapper">
+              <select id="schedule-day">
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+                <option value="0">Sunday</option>
+              </select>
+              <small class="input-hint">Select the day of the week for weekly backups</small>
+            </div>
+          </div>
+
+          <!-- Day of Month Selection (shown for monthly) -->
+          <div id="month-day-selection" class="form-group modern-group" style="display: none;">
+            <label for="schedule-month-day" class="modern-label">
+              <i class="fas fa-calendar"></i>
+              Day of Month
+            </label>
+            <div class="input-wrapper">
+              <select id="schedule-month-day">
+                <option value="1">1st of the month</option>
+                <option value="15">15th of the month</option>
+                <option value="30">30th of the month</option>
+                <option value="last">Last day of the month</option>
+              </select>
+              <small class="input-hint">Select which day of the month for monthly backups</small>
+            </div>
+          </div>
+
+          <!-- Custom Cron Expression (shown for custom) -->
+          <div id="custom-cron" class="form-group modern-group" style="display: none;">
+            <label for="schedule-cron" class="modern-label">
+              <i class="fas fa-code"></i>
+              Custom Cron Expression *
+            </label>
+            <div class="input-wrapper">
+              <input type="text" id="schedule-cron" placeholder="0 2 * * *" required>
+              <small class="input-hint">Advanced: Cron format - minute hour day month weekday</small>
+            </div>
+            <div class="cron-examples">
+              <label class="cron-label">Common Examples:</label>
+              <div class="cron-buttons">
+                <button type="button" class="cron-btn" onclick="setCronExpression('0 2 * * *')">Daily at 2:00 AM</button>
+                <button type="button" class="cron-btn" onclick="setCronExpression('0 */6 * * *')">Every 6 hours</button>
+                <button type="button" class="cron-btn" onclick="setCronExpression('0 9 * * 1')">Every Monday at 9:00 AM</button>
+                <button type="button" class="cron-btn" onclick="setCronExpression('0 0 1 * *')">First day of every month</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group modern-group">
+            <label for="schedule-type" class="modern-label">
+              <i class="fas fa-database"></i>
+              Backup Type
+            </label>
+            <div class="input-wrapper">
+              <select id="schedule-type">
+                <option value="full">Full Backup</option>
+                <option value="incremental">Incremental Backup</option>
+              </select>
+              <small class="input-hint">Full backups include all settings, incremental only changes since last backup</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule Preview Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3><i class="fas fa-eye"></i> Schedule Preview</h3>
+          </div>
+          <div class="schedule-preview">
+            <div id="schedule-preview-content" class="preview-content">
+              <p><i class="fas fa-info-circle"></i> Fill in the details above to see a preview of your schedule</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions modern-actions">
+          <button type="button" class="btn-secondary modern-btn" onclick="closeAllModals()">
+            <i class="fas fa-times"></i>
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary modern-btn">
+            <i class="fas fa-calendar-plus"></i>
+            Create Schedule
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Router Modal -->
+  <div id="edit-router-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Router</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <form id="edit-router-form">
+        <input type="hidden" id="edit-router-id">
+
+        <div class="form-group">
+          <label for="edit-router-name">Router Name *</label>
+          <input type="text" id="edit-router-name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-router-host">IP Address / Hostname *</label>
+          <input type="text" id="edit-router-host" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-router-username">Username *</label>
+            <input type="text" id="edit-router-username" required>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-router-password">Password *</label>
+            <input type="password" id="edit-router-password" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-router-port">Port</label>
+            <input type="number" id="edit-router-port" min="1" max="65535">
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="edit-router-use-ssl">
+              Use SSL
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-router-notes">Notes</label>
+          <textarea id="edit-router-notes"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="update-router-status" class="btn-secondary">Update Status</button>
+          <button type="submit" class="btn-primary">Update Router</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div id="notification" class="notification hidden"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
