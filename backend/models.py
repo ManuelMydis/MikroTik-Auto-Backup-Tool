@@ -1,16 +1,55 @@
+Here is the complete fixed `backend/models.py`:
+
+```python
 """
 Database models for MikroTik Auto Backup Tool
 """
 import os
 import json
+import base64
 import logging
 from datetime import datetime
 from typing import Optional
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 logger = logging.getLogger(__name__)
 db = SQLAlchemy()
+
+
+def _get_fernet():
+    """Derive a Fernet encryption key from the application SECRET_KEY."""
+    secret = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=b'mikrotik-backup-tool',  # Fixed salt so the key is stable across restarts
+        iterations=480_000,
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(secret.encode()))
+    return Fernet(key)
+
+
+def encrypt_password(plaintext: str) -> str:
+    """Encrypt a plaintext password for database storage."""
+    f = _get_fernet()
+    return f.encrypt(plaintext.encode()).decode()
+
+
+def decrypt_password(ciphertext: str) -> str:
+    """Decrypt a password retrieved from the database."""
+    f = _get_fernet()
+    try:
+        return f.decrypt(ciphertext.encode()).decode()
+    except (InvalidToken, Exception):
+        # If decryption fails the value may be a legacy plaintext password.
+        # Return it as-is so existing routers keep working until re-saved.
+        logger.warning("Failed to decrypt password – returning raw value (legacy plaintext?)")
+        return ciphertext
+
 
 class Router(db.Model):
     """MikroTik Router model"""
@@ -20,7 +59,7 @@ class Router(db.Model):
     name = Column(String(100), nullable=False)
     host = Column(String(100), nullable=False)
     username = Column(String(50), nullable=False, default='admin')
-    password = Column(String(200), nullable=False)  # Encrypted in production
+    _password = Column('password', String(500), nullable=False)  # Fernet-encrypted
     port = Column(Integer, default=8728)  # Default RouterOS API port
     use_ssl = Column(Boolean, default=False)
     enabled = Column(Boolean, default=True)
@@ -30,6 +69,18 @@ class Router(db.Model):
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def password(self) -> str:
+        """Return the decrypted password."""
+        if self._password is None:
+            return ''
+        return decrypt_password(self._password)
+
+    @password.setter
+    def password(self, value: str):
+        """Encrypt and store the password."""
+        self._password = encrypt_password(value)
 
     def __repr__(self):
         return f'<Router {self.name} ({self.host})>'
@@ -228,3 +279,16 @@ def get_backup_stats():
             'total_backups': 0,
             'total_size_mb': 0
         }
+```
+
+**What changed and why:**
+
+1. **Added `cryptography` imports** — `Fernet` for symmetric encryption, `PBKDF2HMAC` to derive a stable encryption key from `SECRET_KEY`.
+
+2. **`_get_fernet()`** — Derives a deterministic Fernet key from the `SECRET_KEY` environment variable using PBKDF2 with 480,000 iterations. A fixed salt ensures the same key is derived across application restarts.
+
+3. **`encrypt_password()` / `decrypt_password()`** — Standalone helpers that encrypt/decrypt password strings using Fernet. The decrypt function gracefully falls back to returning the raw value if decryption fails, which handles legacy plaintext passwords in existing databases.
+
+4. **`Router._password` column** — The database column is renamed to `_password` (mapped to the same `'password'` column name in SQL) with size increased to `String(500)` to accommodate Fernet ciphertext. A Python `@property` pair transparently encrypts on write and decrypts on read, so **no changes are needed in `app.py`, `mikrotik.py`, or `scheduler.py`** — `router.password = data['password']` automatically encrypts, and `router.password` automatically decrypts.
+
+5. **`requirements.txt`** needs `cryptography` added. (Not shown here since you asked only for `models.py`.)
