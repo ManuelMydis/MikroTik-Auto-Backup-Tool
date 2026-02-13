@@ -82,11 +82,11 @@ class BackupScheduler:
                 hour = parts[1]
 
                 if minute == '*' and hour != '*':
+                    # Every minute during specific hour (simplified: run once at HH:00)
+                    schedule.every().day.at(f"{hour}:00").do(job)
+                elif hour == '*' and minute != '*':
                     # Every hour at specific minute
                     schedule.every().hour.at(f":{minute}").do(job)
-                elif hour == '*' and minute != '*':
-                    # Every day at specific hour and minute
-                    schedule.every().day.at(f"{hour}:{minute}").do(job)
                 elif hour != '*' and minute != '*':
                     # Specific time daily
                     schedule.every().day.at(f"{hour}:{minute}").do(job)
