@@ -1,3 +1,6 @@
+Here is the complete fixed file content:
+
+```python
 """
 MikroTik RouterOS API utilities for backup operations
 """
@@ -8,20 +11,21 @@ from datetime import datetime
 import librouteros
 from librouteros.exceptions import LibRouterosError, ProtocolError, TrapError
 import paramiko
-from paramiko import SSHClient, AutoAddPolicy
+from paramiko import SSHClient, RejectPolicy
 
 logger = logging.getLogger(__name__)
 
 class MikroTikConnection:
     """MikroTik RouterOS connection handler"""
 
-    def __init__(self, host, username='admin', password='', port=8728, use_ssl=False):
+    def __init__(self, host, username='admin', password='', port=8728, use_ssl=False, ssh_known_hosts_file=None):
         self.host = host
         self.username = username
         self.password = password
         self.port = port
         self.use_ssl = use_ssl
         self.api = None
+        self.ssh_known_hosts_file = ssh_known_hosts_file
 
     def connect(self):
         """Establish connection to MikroTik RouterOS API"""
@@ -162,12 +166,32 @@ class MikroTikConnection:
         finally:
             self.disconnect()
 
+    def _create_ssh_client(self):
+        """Create an SSH client configured with host key verification.
+
+        Uses RejectPolicy to reject connections to hosts whose keys are not
+        already present in the known hosts file. This prevents MITM attacks.
+
+        The known hosts file can be specified via the ssh_known_hosts_file
+        parameter on the constructor. If not set, the system default
+        (~/.ssh/known_hosts) is used.
+
+        To add a host key, use ssh-keyscan:
+            ssh-keyscan -t ed25519 <router-ip> >> ~/.ssh/known_hosts
+        """
+        ssh = SSHClient()
+        ssh.set_missing_host_key_policy(RejectPolicy())
+        if self.ssh_known_hosts_file:
+            ssh.load_host_keys(self.ssh_known_hosts_file)
+        else:
+            ssh.load_system_host_keys()
+        return ssh
+
     def download_backup(self, backup_name, local_path):
         """Download backup file from router using SFTP"""
         try:
-            # Connect via SSH/SFTP
-            ssh = SSHClient()
-            ssh.set_missing_host_key_policy(AutoAddPolicy())
+            # Connect via SSH/SFTP with host key verification
+            ssh = self._create_ssh_client()
             ssh.connect(self.host, username=self.username, password=self.password)
 
             sftp = ssh.open_sftp()
@@ -195,9 +219,8 @@ class MikroTikConnection:
     def download_config_backup(self, backup_name, local_path):
         """Download config backup file from router using SFTP"""
         try:
-            # Connect via SSH/SFTP
-            ssh = SSHClient()
-            ssh.set_missing_host_key_policy(AutoAddPolicy())
+            # Connect via SSH/SFTP with host key verification
+            ssh = self._create_ssh_client()
             ssh.connect(self.host, username=self.username, password=self.password)
 
             sftp = ssh.open_sftp()
@@ -425,3 +448,18 @@ def check_router_status(router):
         logger.error(f"Error checking status for router {router.name}: {e}")
         router.status = 'offline'
         return False
+```
+
+**Changes made:**
+
+1. **Replaced `AutoAddPolicy` with `RejectPolicy`** in the import (line 11) — `RejectPolicy` rejects connections to any host whose key is not already in the known hosts file, preventing MITM attacks.
+
+2. **Added `ssh_known_hosts_file` parameter** to `__init__()` — allows specifying a custom known hosts file path, or defaults to the system `~/.ssh/known_hosts`.
+
+3. **Extracted `_create_ssh_client()` helper method** — centralizes SSH client creation with proper host key verification:
+   - Sets `RejectPolicy()` as the missing host key policy (rejects unknown hosts instead of silently accepting them)
+   - Loads host keys from either the specified file (`load_host_keys()`) or the system default (`load_system_host_keys()`)
+
+4. **Updated `download_backup()` and `download_config_backup()`** (previously lines 170 and 200) to use `_create_ssh_client()` instead of inline `AutoAddPolicy()`.
+
+Router host keys must now be pre-registered in the known hosts file (e.g., via `ssh-keyscan -t ed25519 <router-ip> >> ~/.ssh/known_hosts`) before SFTP connections will succeed.
