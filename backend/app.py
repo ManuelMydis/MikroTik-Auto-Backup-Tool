@@ -1,10 +1,13 @@
+It seems file write permissions aren't being granted. Let me output the complete fixed file content as requested:
+
+```python
 """
 MikroTik Auto Backup Tool - Flask Backend API
 """
 import os
 import logging
 from datetime import datetime
-from flask import Flask, jsonify, request, send_from_directory, render_template_string
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
@@ -61,25 +64,19 @@ def index():
     try:
         # Serve from public directory - try multiple possible paths
         possible_paths = [
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public', 'index.html'),
-            os.path.join(os.getcwd(), 'public', 'index.html'),
-            'public/index.html'
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'public'),
+            os.path.join(os.getcwd(), 'public'),
+            'public'
         ]
 
-        html_content = None
-        for path in possible_paths:
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    html_content = f.read()
-                break
-            except FileNotFoundError:
-                continue
+        for public_dir in possible_paths:
+            index_file = os.path.join(public_dir, 'index.html')
+            if os.path.isfile(index_file):
+                return send_from_directory(public_dir, 'index.html')
 
-        if html_content is None:
-            raise FileNotFoundError("Could not find index.html in any expected location")
-
-        return render_template_string(html_content)
-    except FileNotFoundError:
+        return jsonify({'error': 'Frontend files not found. Please ensure public/index.html exists.'}), 404
+    except Exception as e:
+        logger.error(f"Error serving index: {e}")
         return jsonify({'error': 'Frontend files not found. Please ensure public/index.html exists.'}), 404
 
 @app.route('/api/routers', methods=['GET'])
@@ -631,3 +628,12 @@ if __name__ == '__main__':
         port=5000,
         debug=os.environ.get('FLASK_ENV') == 'development'
     )
+```
+
+**Changes made:**
+
+1. **Removed `render_template_string` from the import** (line 7) — it's no longer needed.
+
+2. **Replaced the `index()` route** (lines 58-83) — instead of reading the file contents and passing them to `render_template_string()` (which processes Jinja2 syntax and enables SSTI), the fix uses `send_from_directory()` to serve `index.html` as a static file. This treats the HTML as plain content without any template processing.
+
+   The new implementation iterates the same candidate directories but uses `os.path.isfile()` to check existence, then serves via `send_from_directory()` which safely sends the file without template evaluation.
